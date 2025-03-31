@@ -157,10 +157,12 @@ binary_sensor:
 switch:
   - platform: modbus_controller
     modbus_controller_id: ${modbus_device_id}
-    name: ${device_name} Tryb Zima Lato
+    # 0 lato
+    # 1 zima
+    name: ${device_name} Harmonogram tryb: Zima
     register_type: holding
     address: 4209
-    icon: "mdi:toggle-switch"
+    icon: "mdi:sun-snowflake-variant"
   - platform: modbus_controller
     modbus_controller_id: ${modbus_device_id}
     name: ${device_name} Wietrzenie
