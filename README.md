@@ -38,6 +38,7 @@ These packages are compatible with ESPHome version 2025.3 and newer.
 ### Modbus devices
 
 - Sofar Inverter KTL
+- Liquid sensor measuring depth of liquid / RS485
 - SDM630 Energy Meter
 - Thessla Green Airpack 4
 

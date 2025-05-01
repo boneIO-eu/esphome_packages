@@ -1,0 +1,29 @@
+substitutions:
+  device_name: 'Liquid sensor'
+  modbus_device_id: 'liquid_modbus'
+  modbus_device_address: '0x01'
+  modbus_id: 'boneio_modbus'
+  update_interval: '60s'
+
+modbus_controller:
+  - id: ${modbus_device_id}
+    address: ${modbus_device_address}
+    modbus_id: ${modbus_id}
+    setup_priority: -10
+    update_interval: ${update_interval}
+
+sensor:
+  - platform: modbus_controller
+    name: ${device_name} Measurement value
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_measurement_value
+    address: 4
+    register_type: holding
+    accuracy_decimals: 1
+    value_type: S_WORD
+    unit_of_measurement: cm
+    device_class: distance
+    state_class: measurement
+    skip_updates: 3
+    filters:
+      - multiply: 0.1
