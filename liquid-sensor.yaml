@@ -1,5 +1,7 @@
 substitutions:
   device_name: 'Liquid sensor'
+  width: '10'
+  length: '10'
   modbus_device_id: 'liquid_modbus'
   modbus_device_address: '0x01'
   modbus_id: 'boneio_modbus'
@@ -27,3 +29,13 @@ sensor:
     skip_updates: 3
     filters:
       - multiply: 0.1
+  - platform: template
+    name: ${device_name} Volume
+    lambda: |
+      return id(${modbus_device_id}_measurement_value).state * (float)${width} * (float)${length};
+    unit_of_measurement: l
+    accuracy_decimals: 1
+    device_class: volume
+    state_class: measurement
+
+  
