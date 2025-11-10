@@ -90,6 +90,23 @@ Code snippet:
           update_interval: '60s'
 ```
 
+### SDM120M Energy Meter
+
+Code snippet:
+```yaml
+  sdm120m:
+    url: https://github.com/boneIO-eu/esphome-packages/
+    files:
+      - path: sdm120m.yaml
+        vars: 
+          modbus_controller_id: 'sdm120m_modbus'
+          name: 'SDM120M'
+          modbus_device_id: 'sdm120m_modbus'
+          modbus_device_address: '0x01' #CHANGE THIS
+          modbus_id: 'boneio_modbus'
+          update_interval: '60s'
+```
+
 ### Thessla Green Airpack 4
 
 Code snippet:

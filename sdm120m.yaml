@@ -1,0 +1,111 @@
+#SDM 120M Power meter. Single phase modbus energy meter. Tested on Eastron SDM120M available on https://store.boneio.eu/product/sdm120m
+
+defaults:
+  device_name: 'SDM120M'
+  modbus_device_id: 'sdm'
+  modbus_device_address: '0x01'
+  modbus_id: 'boneio_modbus'
+  update_interval: '60s'
+
+modbus_controller:
+  - id: ${modbus_device_id}
+    address: ${modbus_device_address}
+    modbus_id: ${modbus_id}
+    setup_priority: -10
+    update_interval: ${update_interval}
+
+sensor:
+  - platform: modbus_controller
+    name: ${device_name} L1 Voltage
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_phase1
+    address: 0
+    register_type: 'read'
+    accuracy_decimals: 1
+    value_type: FP32
+    unit_of_measurement: V
+    device_class: voltage
+    state_class: measurement
+
+  - platform: modbus_controller
+    name: ${device_name} L1 Current
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_current1
+    address: 6
+    register_type: 'read'
+    accuracy_decimals: 2
+    value_type: FP32
+    unit_of_measurement: A
+    device_class: current
+    state_class: measurement
+
+  - platform: modbus_controller
+    name: ${device_name} L1 Power
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_power1
+    address: 12
+    register_type: 'read'
+    accuracy_decimals: 2
+    value_type: FP32
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+
+  - platform: modbus_controller
+    name: ${device_name} Total Power Watt
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_total_w
+    address: 52
+    register_type: 'read'
+    accuracy_decimals: 2
+    value_type: FP32
+    unit_of_measurement: W
+    device_class: power
+    state_class: measurement
+
+  - platform: modbus_controller
+    name: ${device_name} Frequency
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_frequency
+    address: 70
+    register_type: 'read'
+    accuracy_decimals: 2
+    value_type: FP32
+    unit_of_measurement: Hz
+    state_class: measurement
+
+  - platform: modbus_controller
+    name: ${device_name} Import Energy Total
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_import_total
+    address: 72
+    register_type: 'read'
+    accuracy_decimals: 2
+    value_type: FP32
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+
+  - platform: modbus_controller
+    name: ${device_name} Export Energy Total
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_export_total
+    address: 74
+    register_type: 'read'
+    accuracy_decimals: 2
+    value_type: FP32
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
+
+  - platform: modbus_controller
+    name: ${device_name} Total
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_total
+    address: 342
+    register_type: 'read'
+    accuracy_decimals: 2
+    value_type: FP32
+    unit_of_measurement: kWh
+    device_class: energy
+    state_class: total_increasing
