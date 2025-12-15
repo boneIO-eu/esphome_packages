@@ -47,7 +47,7 @@ Code snippet:
       - path: sofar-inverter.yaml
         vars: 
           modbus_controller_id: 'sofar_modbus'
-          name: 'Sofar'
+          device_name: 'Sofar'
           modbus_device_id: 'sofar_modbus'
           modbus_device_address: '0x01' #CHANGE THIS
           modbus_id: 'boneio_modbus'
@@ -64,7 +64,7 @@ Code snippet:
       - path: liquid-sensor.yaml
         vars: 
           modbus_controller_id: 'liquid_modbus'
-          name: 'Liquid sensor'
+          device_name: 'Liquid sensor'
           modbus_device_id: 'liquid_modbus'
           modbus_device_address: '0x01' #CHANGE THIS
           modbus_id: 'boneio_modbus'
@@ -83,7 +83,7 @@ Code snippet:
       - path: sdm630.yaml
         vars: 
           modbus_controller_id: 'sdm630_modbus'
-          name: 'SDM630'
+          device_name: 'SDM630'
           modbus_device_id: 'sdm630_modbus'
           modbus_device_address: '0x01' #CHANGE THIS
           modbus_id: 'boneio_modbus'
@@ -100,7 +100,7 @@ Code snippet:
       - path: sdm120m.yaml
         vars: 
           modbus_controller_id: 'sdm120m_modbus'
-          name: 'SDM120M'
+          device_name: 'SDM120M'
           modbus_device_id: 'sdm120m_modbus'
           modbus_device_address: '0x01' #CHANGE THIS
           modbus_id: 'boneio_modbus'
@@ -117,7 +117,7 @@ Code snippet:
       - path: thessla-green-airpack-4.yaml
         vars: 
           modbus_controller_id: 'thessla_green_airpack_4_modbus'
-          name: 'Thessla Green Airpack 4'
+          device_name: 'Thessla Green Airpack 4'
           modbus_device_id: 'thessla_green_airpack_4_modbus'
           modbus_device_address: '0x01' #CHANGE THIS
           modbus_id: 'boneio_modbus'
