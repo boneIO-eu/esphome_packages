@@ -12,7 +12,7 @@
 #   0x0069 (105) - Hum cal       [0.1 %RH offset, S_WORD]       (R/W)
 
 defaults:
-  device_name: 'boneIO Edge Temp'
+  device_name: 'boneIO Edge Temp & Humidity'
   modbus_device_id: 'boneio_edge_temp'
   modbus_device_address: '0x01'
   modbus_id: 'boneio_modbus'
@@ -23,7 +23,7 @@ esphome:
     - id: ${modbus_device_id}_device
       name: ${device_name}
       manufacturer: boneIO
-      model: Edge Temp
+      model: Edge Temp & Humidity
 
 modbus_controller:
   - id: ${modbus_device_id}
