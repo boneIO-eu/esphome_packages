@@ -107,6 +107,23 @@ Code snippet:
           update_interval: '60s'
 ```
 
+### boneIO Edge Temp and Humidity sensor
+
+Code snippet:
+```yaml
+  boneio_edge_temp:
+    url: https://github.com/boneIO-eu/esphome-packages/
+    files:
+      - path: boneio-edge-temp.yaml
+        vars: 
+          modbus_controller_id: 'boneio_edge_temp'
+          device_name: 'boneIO Edge Temp'
+          modbus_device_id: 'boneio_edge_temp'
+          modbus_device_address: '0x01' #CHANGE THIS
+          modbus_id: 'boneio_modbus'
+          update_interval: '60s'
+```
+
 ### Thessla Green Airpack 4
 
 Code snippet:

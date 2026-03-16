@@ -1,0 +1,147 @@
+# boneIO Edge Temp and Humidity sensor (SHT40 + ATtiny402 Modbus RTU)
+# Available on https://store.boneio.eu
+#
+# Holding registers:
+#   0x0000 (0)   - Humidity      [0.1 %RH, S_WORD]              (R)
+#   0x0001 (1)   - Temperature   [0.1 °C,  S_WORD]              (R)
+#   0x0064 (100) - Slave ID      [1-247]                         (R/W)
+#   0x0065 (101) - Baud Rate     [0=2400,1=4800,2=9600,3=19200]  (R/W)
+#   0x0066 (102) - LED mode      [0=off,1=on,2=beacon,3=auto]    (R/W)
+#   0x0067 (103) - FW version    [e.g. 0x0002 = v0.2]           (R)
+#   0x0068 (104) - Temp cal      [0.1 °C offset, S_WORD]        (R/W)
+#   0x0069 (105) - Hum cal       [0.1 %RH offset, S_WORD]       (R/W)
+
+defaults:
+  device_name: 'boneIO Edge Temp'
+  modbus_device_id: 'boneio_edge_temp'
+  modbus_device_address: '0x01'
+  modbus_id: 'boneio_modbus'
+  update_interval: '60s'
+
+esphome:
+  devices:
+    - id: ${modbus_device_id}_device
+      name: ${device_name}
+      manufacturer: boneIO
+      model: Edge Temp
+
+modbus_controller:
+  - id: ${modbus_device_id}
+    address: ${modbus_device_address}
+    modbus_id: ${modbus_id}
+    setup_priority: -10
+    update_interval: ${update_interval}
+
+sensor:
+  - platform: modbus_controller
+    name: ${device_name} Humidity
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_humidity
+    device_id: ${modbus_device_id}_device
+    address: 0
+    register_type: holding
+    accuracy_decimals: 1
+    value_type: S_WORD
+    unit_of_measurement: '%'
+    device_class: humidity
+    state_class: measurement
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    name: ${device_name} Temperature
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_temperature
+    device_id: ${modbus_device_id}_device
+    address: 1
+    register_type: holding
+    accuracy_decimals: 1
+    value_type: S_WORD
+    unit_of_measurement: '°C'
+    device_class: temperature
+    state_class: measurement
+    filters:
+      - multiply: 0.1
+
+  - platform: modbus_controller
+    name: ${device_name} FW Version
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_fw_version
+    device_id: ${modbus_device_id}_device
+    address: 103
+    register_type: holding
+    value_type: U_WORD
+    entity_category: diagnostic
+    icon: mdi:memory
+    skip_updates: 1440
+    lambda: |-
+      uint16_t raw = (uint16_t)x;
+      uint8_t major = raw >> 8;
+      uint8_t minor = raw & 0xFF;
+      return major * 10.0f + minor;
+    filters:
+      - multiply: 0.1
+
+select:
+  - platform: modbus_controller
+    name: ${device_name} LED Mode
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_led_mode
+    device_id: ${modbus_device_id}_device
+    address: 102
+    value_type: U_WORD
+    icon: mdi:led-on
+    entity_category: config
+    optionmap:
+      "Off": 0
+      "On": 1
+      "Beacon": 2
+      "Auto": 3
+
+number:
+  - platform: modbus_controller
+    name: ${device_name} Temperature Calibration
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_cal_temp
+    device_id: ${modbus_device_id}_device
+    address: 104
+    register_type: holding
+    value_type: S_WORD
+    icon: mdi:thermometer-check
+    entity_category: config
+    unit_of_measurement: '°C'
+    min_value: -50.0
+    max_value: 50.0
+    step: 0.1
+    multiply: 10
+
+  - platform: modbus_controller
+    name: ${device_name} Humidity Calibration
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_cal_hum
+    device_id: ${modbus_device_id}_device
+    address: 105
+    register_type: holding
+    value_type: S_WORD
+    icon: mdi:water-check
+    entity_category: config
+    unit_of_measurement: '%'
+    min_value: -50.0
+    max_value: 50.0
+    step: 0.1
+    multiply: 10
+
+  - platform: modbus_controller
+    name: ${device_name} Modbus Address
+    modbus_controller_id: ${modbus_device_id}
+    id: ${modbus_device_id}_slave_address
+    device_id: ${modbus_device_id}_device
+    address: 100
+    register_type: holding
+    value_type: U_WORD
+    icon: mdi:numeric
+    entity_category: diagnostic
+    min_value: 1
+    max_value: 247
+    step: 1
+    mode: box
