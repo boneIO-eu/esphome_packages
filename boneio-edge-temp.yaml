@@ -22,8 +22,6 @@ esphome:
   devices:
     - id: ${modbus_device_id}_device
       name: ${device_name}
-      manufacturer: boneIO
-      model: Edge Temp & Humidity
 
 modbus_controller:
   - id: ${modbus_device_id}
