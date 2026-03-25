@@ -91,10 +91,10 @@ select:
     icon: mdi:led-on
     entity_category: config
     optionsmap:
-      "Off": 0
-      "On": 1
-      "Beacon": 2
-      "Auto": 3
+      "off": 0
+      "on": 1
+      "beacon": 2
+      "auto": 3
 
 number:
   - platform: modbus_controller
