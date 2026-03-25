@@ -90,7 +90,7 @@ select:
     value_type: U_WORD
     icon: mdi:led-on
     entity_category: config
-    optionmap:
+    optionsmap:
       "Off": 0
       "On": 1
       "Beacon": 2
