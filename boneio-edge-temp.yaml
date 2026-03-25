@@ -72,6 +72,7 @@ sensor:
     entity_category: diagnostic
     icon: mdi:memory
     skip_updates: 1440
+    accuracy_decimals: 1
     lambda: |-
       uint16_t raw = (uint16_t)x;
       uint8_t major = raw >> 8;
@@ -111,7 +112,7 @@ number:
     min_value: -50.0
     max_value: 50.0
     step: 0.1
-    multiply: 10
+    multiply: 0.1
 
   - platform: modbus_controller
     name: ${device_name} Humidity Calibration
@@ -127,7 +128,7 @@ number:
     min_value: -50.0
     max_value: 50.0
     step: 0.1
-    multiply: 10
+    multiply: 0.1
 
   - platform: modbus_controller
     name: ${device_name} Modbus Address
