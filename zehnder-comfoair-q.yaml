@@ -1,0 +1,881 @@
+# Zehnder ComfoAir Q integration via CAN bus (boneIO).
+# Requires a boneIO board (or any ESP32) with CAN transceiver wired to GPIO5 (TX) / GPIO4 (RX).
+# Uses external component: https://github.com/belsander/esphome-zehnder-comfoair
+
+substitutions:
+  # Device identification
+  device_name: 'Zehnder'
+  comfoair_id: 'comfoair'
+  fan_id: 'comfoair_fan'
+
+  # Filters
+  filter_time: 5s
+  filter_send_every: "1"
+  filter_window_size: "3"
+
+external_components:
+  - source: github://belsander/esphome-zehnder-comfoair@main
+    components: [ zehnder_comfoair_q ]
+
+# ──────────────────────────────────────────────
+# KOMPONENTY ZEHNDER COMFOAIR Q & CANBUS
+# ──────────────────────────────────────────────
+zehnder_comfoair_q:
+  id: ${comfoair_id}
+  request_ids: [16, 49, 54, 55, 65, 66, 67, 81, 82, 117, 118, 119, 120, 121, 122, 128, 129, 130, 192, 209, 210, 211, 212, 212, 213, 214, 215, 216, 217, 218, 220, 221, 225, 227, 274, 275, 276, 277, 278, 290, 291, 292, 293, 294]
+
+canbus:
+  - platform: esp32_can
+    tx_pin: GPIO5
+    rx_pin: GPIO4
+    bit_rate: 50kbps
+    can_id: 0
+    on_frame:
+      - can_id: 0
+        can_id_mask: 0
+        use_extended_id: true
+        then:
+          - lambda: |-
+              auto data_pretty = remote_transmission_request ? "n/a" : format_hex_pretty(x).c_str();
+              if ((can_id & 0b11111000000000011111111000000) == 0b00000000000000000000001000000)
+              {
+                ESP_LOGD("comfoair_dump", "Node: %ld, PDO: %ld, rtr: %d, length: %d, content: %s (can_id: 0x%08lx)", can_id & 0x3f, can_id >> 14, remote_transmission_request, x.size(), data_pretty, can_id);
+              }
+              else
+              {
+                ESP_LOGV("comfoair_dump", "can_id: 0x%08lx, rtr: %d, length: %d, content: %s", can_id, remote_transmission_request, x.size(), data_pretty);
+              }
+      - can_id: 0b00000000000000000000001000000
+        can_id_mask: 0b11111000000000011111111000000
+        use_extended_id: true
+        remote_transmission_request: false
+        then:
+          - lambda: |-
+              auto pdo_id = id(${comfoair_id})->get_pdo_id_from_can_id (can_id);
+              switch (pdo_id)
+              {
+                  comfoair_on_frame_case( 16, id(${comfoair_id}), away_indicator_raw,                true);
+                  comfoair_on_frame_case( 49, id(${comfoair_id}), operating_mode,                    true);
+                  comfoair_on_frame_case( 54, id(${comfoair_id}), supply_fan_mode,                   true);
+                  comfoair_on_frame_case( 55, id(${comfoair_id}), exhaust_fan_mode,                  true);
+                  comfoair_on_frame_case( 65, id(${comfoair_id}), fan_level_raw,                     true);
+                  comfoair_on_frame_case( 66, id(${comfoair_id}), bypass_activation_mode,            true);
+                  comfoair_on_frame_case( 67, id(${comfoair_id}), temperature_profile,                true);
+                  comfoair_on_frame_case( 81, id(${comfoair_id}), next_fan_change_in_raw,           false);
+                  comfoair_on_frame_case( 82, id(${comfoair_id}), next_bypass_change_in_raw,        false);
+                  comfoair_on_frame_case(117, id(${comfoair_id}), exhaust_fan_duty,                 false);
+                  comfoair_on_frame_case(118, id(${comfoair_id}), supply_fan_duty,                  false);
+                  comfoair_on_frame_case(119, id(${comfoair_id}), exhaust_fan_flow,                  false);
+                  comfoair_on_frame_case(120, id(${comfoair_id}), supply_fan_flow,                   false);
+                  comfoair_on_frame_case(121, id(${comfoair_id}), exhaust_fan_speed,                 true);
+                  comfoair_on_frame_case(122, id(${comfoair_id}), supply_fan_speed,                  true);
+                  comfoair_on_frame_case(128, id(${comfoair_id}), power,                             true);
+                  comfoair_on_frame_case(129, id(${comfoair_id}), energy_ytd,                        true);
+                  comfoair_on_frame_case(130, id(${comfoair_id}), energy_since_start,                true);
+                  comfoair_on_frame_case(192, id(${comfoair_id}), filter_replacement_remaining_days, false);
+                  comfoair_on_frame_case(209, id(${comfoair_id}), running_mean_outdoor_temp,        false);
+                  comfoair_on_frame_case(210, id(${comfoair_id}), heating_season_raw,                true);
+                  comfoair_on_frame_case(211, id(${comfoair_id}), cooling_season_raw,                true);
+                  comfoair_on_frame_case(212, id(${comfoair_id}), profile_target_temp,               false);
+                  comfoair_on_frame_case(213, id(${comfoair_id}), avoided_heating_actual,            true);
+                  comfoair_on_frame_case(214, id(${comfoair_id}), avoided_heating_ytd,               true);
+                  comfoair_on_frame_case(215, id(${comfoair_id}), avoided_heating_total,             true);
+                  comfoair_on_frame_case(216, id(${comfoair_id}), avoided_cooling_actual,            true);
+                  comfoair_on_frame_case(217, id(${comfoair_id}), avoided_cooling_ytd,               true);
+                  comfoair_on_frame_case(218, id(${comfoair_id}), avoided_cooling_total,             true);
+                  comfoair_on_frame_case(220, id(${comfoair_id}), pre_heater_temp_before,           false);
+                  comfoair_on_frame_case(221, id(${comfoair_id}), post_heater_temp_after,           false);
+                  comfoair_on_frame_case(225, id(${comfoair_id}), ventilation_mode,                  true);
+                  comfoair_on_frame_case(227, id(${comfoair_id}), bypass_state,                      true);
+                  comfoair_on_frame_case(274, id(${comfoair_id}), extract_air_temp,                 false);
+                  comfoair_on_frame_case(275, id(${comfoair_id}), exhaust_air_temp,                 false);
+                  comfoair_on_frame_case(276, id(${comfoair_id}), outdoor_air_temp,                 false);
+                  comfoair_on_frame_case(277, id(${comfoair_id}), pre_heater_temp_after,            false);
+                  comfoair_on_frame_case(278, id(${comfoair_id}), supply_air_temp,                  false);
+                  comfoair_on_frame_case(290, id(${comfoair_id}), extract_air_humidity,              true);
+                  comfoair_on_frame_case(291, id(${comfoair_id}), exhaust_air_humidity,              true);
+                  comfoair_on_frame_case(292, id(${comfoair_id}), outdoor_air_humidity,              true);
+                  comfoair_on_frame_case(293, id(${comfoair_id}), pre_heater_humidity_after,         true);
+                  comfoair_on_frame_case(294, id(${comfoair_id}), supply_air_humidity,               true);
+              }
+
+# ──────────────────────────────────────────────
+# ZMIENNE FILTRÓW (YAML Anchors)
+# ──────────────────────────────────────────────
+.throttle-filter: &throttle-filter
+  - throttle_average: "${filter_time}"
+  - filter_out: nan
+  - sliding_window_moving_average:
+      {send_every: "${filter_send_every}", window_size: "${filter_window_size}"}
+
+.throttle-filter-round-tens: &throttle-filter-round-tens
+  - throttle_average: "${filter_time}"
+  - filter_out: nan
+  - sliding_window_moving_average:
+      {send_every: "${filter_send_every}", window_size: "${filter_window_size}"}
+  - lambda: return round(x/10)*10;
+
+.throttle-filter-e-3: &throttle-filter-e-3
+  - throttle_average: "${filter_time}"
+  - filter_out: nan
+  - sliding_window_moving_average:
+      {send_every: "${filter_send_every}", window_size: "${filter_window_size}"}
+  - multiply: 0.001
+
+output:
+  # ZEHNDER VIRTUAL OUTPUT
+  - platform: template
+    id: comfoair_fan_output
+    type: float
+    zero_means_zero: true
+    write_action:
+      - logger.log: "Fan Speed was changed!"
+
+sensor:
+  - platform: template
+    id: away_indicator_raw # PDO 16
+    name: "${device_name} away_indicator_raw"
+    internal: true
+    accuracy_decimals: 0
+    on_value:
+      then:
+        - lambda: id(away_indicator).publish_state(x == 7);
+  - platform: template
+    id: fan_level_raw # PDO 65
+    name: "${device_name} fan_level_raw"
+    internal: true
+    accuracy_decimals: 0
+    on_value:
+      then:
+        - lambda: id(fan_level).publish_state(std::to_string(int(x)));
+        - if:
+            condition:
+              lambda: "return int(x) == 0;"
+            then:
+              - fan.turn_off: ${fan_id}
+            else:
+              - fan.turn_on:
+                  id: ${fan_id}
+                  speed: !lambda "return int(x);"
+  - platform: template
+    id: next_fan_change_in_raw # PDO 81
+    name: "${device_name} next_fan_change_in_raw"
+    accuracy_decimals: 0
+    device_class: duration
+    unit_of_measurement: "s"
+    internal: true
+    filters:
+      - throttle: 0.5s
+    on_value:
+      then:
+        - lambda: id(next_fan_change_in).publish_state(id(${comfoair_id})->seconds_to_human_readable(x));
+  - platform: template
+    id: next_bypass_change_in_raw # PDO 82
+    name: "${device_name} next_bypass_change_in_raw"
+    accuracy_decimals: 0
+    device_class: duration
+    unit_of_measurement: "s"
+    internal: true
+    filters:
+      - throttle: 0.5s
+    on_value:
+      then:
+        - lambda: id(next_bypass_change_in).publish_state(id(${comfoair_id})->seconds_to_human_readable(x));
+  - platform: template
+    id: exhaust_fan_duty # PDO 117
+    name: "${device_name} Exhaust Fan Duty"
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+    state_class: measurement
+    filters: *throttle-filter
+  - platform: template
+    id: supply_fan_duty # PDO 118
+    name: "${device_name} Supply Fan Duty"
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+    state_class: measurement
+    filters: *throttle-filter
+  - platform: template
+    id: supply_fan_flow # PDO 119
+    name: "${device_name} Supply Fan Flow"
+    icon: mdi:gauge
+    accuracy_decimals: 0
+    unit_of_measurement: "m³/h"
+    state_class: measurement
+    filters: *throttle-filter
+  - platform: template
+    id: exhaust_fan_flow # PDO 120
+    name: "${device_name} Exhaust Fan Flow"
+    icon: mdi:gauge
+    accuracy_decimals: 0
+    unit_of_measurement: "m³/h"
+    state_class: measurement
+    filters: *throttle-filter
+  - platform: template
+    id: exhaust_fan_speed # PDO 121
+    name: "${device_name} Exhaust Fan Speed"
+    icon: mdi:speedometer
+    accuracy_decimals: 0
+    unit_of_measurement: "rpm"
+    state_class: measurement
+    filters: *throttle-filter-round-tens
+  - platform: template
+    id: supply_fan_speed # PDO 122
+    name: "${device_name} Supply Fan Speed"
+    icon: mdi:speedometer
+    accuracy_decimals: 0
+    unit_of_measurement: "rpm"
+    state_class: measurement
+    filters: *throttle-filter-round-tens
+  - platform: template
+    id: power # PDO 128
+    name: "${device_name} Power"
+    accuracy_decimals: 0
+    unit_of_measurement: "W"
+    device_class: power
+    state_class: measurement
+    filters: *throttle-filter
+  - platform: template
+    id: energy_ytd # PDO 129
+    name: "${device_name} Energy YTD"
+    accuracy_decimals: 0
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+  - platform: template
+    id: energy_since_start # PDO 130
+    name: "${device_name} Energy Since Start"
+    accuracy_decimals: 0
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+  - platform: template
+    id: filter_replacement_remaining_days # PDO 192
+    name: "${device_name} Filter Replacement Remaining Days"
+    icon: mdi:air-filter
+    accuracy_decimals: 0
+    unit_of_measurement: "days"
+  - platform: template
+    id: running_mean_outdoor_temp # PDO 209
+    name: "${device_name} Running Mean Outdoor Temperature"
+    filters: [multiply: 0.1]
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+  - platform: template
+    id: heating_season_raw # PDO 210
+    accuracy_decimals: 0
+    on_value:
+      then:
+        - lambda: id(heating_season).publish_state(x == 1);
+  - platform: template
+    id: cooling_season_raw # PDO 211
+    accuracy_decimals: 0
+    on_value:
+      then:
+        - lambda: id(cooling_season).publish_state(x == 1);
+  - platform: template
+    id: profile_target_temp # PDO 212
+    name: "${device_name} Profile Target Temperature"
+    filters: [multiply: 0.1]
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+  - platform: template
+    id: avoided_heating_actual # PDO 213
+    name: "${device_name} Avoided Heating Actual"
+    filters: *throttle-filter-e-3
+    accuracy_decimals: 3
+    unit_of_measurement: "kW"
+    device_class: power
+    state_class: measurement
+  - platform: template
+    id: avoided_heating_ytd # PDO 214
+    name: "${device_name} Avoided Heating YTD"
+    accuracy_decimals: 0
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+  - platform: template
+    id: avoided_heating_total # PDO 215
+    name: "${device_name} Avoided Heating Total"
+    accuracy_decimals: 0
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+  - platform: template
+    id: avoided_cooling_actual # PDO 216
+    name: "${device_name} Avoided Cooling Actual"
+    filters: *throttle-filter-e-3
+    accuracy_decimals: 3
+    unit_of_measurement: "kW"
+    device_class: power
+    state_class: measurement
+  - platform: template
+    id: avoided_cooling_ytd # PDO 217
+    name: "${device_name} Avoided Cooling YTD"
+    accuracy_decimals: 0
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+  - platform: template
+    id: avoided_cooling_total # PDO 218
+    name: "${device_name} Avoided Cooling Total"
+    accuracy_decimals: 0
+    unit_of_measurement: "kWh"
+    device_class: energy
+    state_class: total_increasing
+  - platform: template
+    id: pre_heater_temp_before # PDO 220
+    name: "${device_name} Pre-heater Temperature Before"
+    filters: [multiply: 0.1]
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+  - platform: template
+    id: post_heater_temp_after # PDO 221
+    name: "${device_name} Post-heater Temperature After"
+    filters: [multiply: 0.1]
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+  - platform: template
+    id: bypass_state # PDO 227
+    name: "${device_name} Bypass State"
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+    state_class: measurement
+  - platform: template
+    id: extract_air_temp # PDO 274
+    name: "${device_name} Extract Air Temperature"
+    filters: [multiply: 0.1]
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+  - platform: template
+    id: exhaust_air_temp # PDO 275
+    name: "${device_name} Exhaust Air Temperature"
+    filters: [multiply: 0.1]
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+  - platform: template
+    id: outdoor_air_temp # PDO 276
+    name: "${device_name} Outdoor Air Temperature"
+    filters: [multiply: 0.1]
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+  - platform: template
+    id: pre_heater_temp_after # PDO 277
+    name: "${device_name} Pre-heater Temp After"
+    filters: [multiply: 0.1]
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+  - platform: template
+    id: supply_air_temp # PDO 278
+    name: "${device_name} Supply Air Temperature"
+    filters: [multiply: 0.1]
+    accuracy_decimals: 1
+    unit_of_measurement: "°C"
+    device_class: temperature
+    state_class: measurement
+  - platform: template
+    id: extract_air_humidity # PDO 290
+    name: "${device_name} Extract Air Humidity"
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+  - platform: template
+    id: exhaust_air_humidity # PDO 291
+    name: "${device_name} Exhaust Air Humidity"
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+  - platform: template
+    id: outdoor_air_humidity # PDO 292
+    name: "${device_name} Outdoor Air Humidity"
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+  - platform: template
+    id: pre_heater_humidity_after # PDO 293
+    name: "${device_name} Pre-heater Humidity After"
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+  - platform: template
+    id: supply_air_humidity # PDO 294
+    name: "${device_name} Supply Air Humidity"
+    accuracy_decimals: 0
+    unit_of_measurement: "%"
+    device_class: humidity
+    state_class: measurement
+
+text_sensor:
+  - platform: template
+    id: fan_level # PDO 65 (raw)
+    name: "${device_name} Fan Level"
+    icon: mdi:fan
+    filters:
+      - map:
+          - 0 -> Away
+          - 1 -> Low
+          - 2 -> Medium
+          - 3 -> High
+    on_value:
+      then:
+        - lambda: id(fan_level_select).publish_state(x);
+  - platform: template
+    id: operating_mode # PDO 49
+    name: "${device_name} Operating Mode"
+    filters:
+      - map:
+          - 1 -> Manual (limited)
+          - 2 -> PRESETRF
+          - 3 -> PRESETANALOG
+          - 4 -> PRESETRFANALOG
+          - 5 -> Manual (permanent)
+          - 6 -> Boost
+          - 7 -> Boost (RF)
+          - 8 -> Bathroom Switch
+          - 11 -> Away
+          - 255 -> Auto
+    on_value:
+      then:
+        - if:
+            condition:
+              lambda: 'return x == "Auto";'
+            then:
+              - switch.template.publish:
+                  id: auto_ventilation
+                  state: ON
+            else:
+              - switch.template.publish:
+                  id: auto_ventilation
+                  state: OFF
+  - platform: template
+    id: supply_fan_mode # PDO 54
+    name: "${device_name} Supply Fan Mode"
+    icon: mdi:home-import-outline
+    filters:
+      - map:
+          - 1 -> Supply Only
+          - 255 -> Balanced
+    on_value:
+      if:
+        condition:
+          lambda: 'return x == "Supply Only";'
+        then:
+          - lambda: id(balance_mode).publish_state(x);
+        else:
+          if:
+            condition:
+              lambda: 'return id(exhaust_fan_mode).state == "Balanced";'
+            then:
+              - lambda: id(balance_mode).publish_state(x);
+  - platform: template
+    id: exhaust_fan_mode # PDO 55
+    name: "${device_name} Exhaust Fan Mode"
+    icon: mdi:home-export-outline
+    filters:
+      - map:
+          - 1 -> Exhaust Only
+          - 255 -> Balanced
+    on_value:
+      if:
+        condition:
+          lambda: 'return x == "Exhaust Only";'
+        then:
+          - lambda: id(balance_mode).publish_state(x);
+        else:
+          if:
+            condition:
+              lambda: 'return id(supply_fan_mode).state == "Balanced";'
+            then:
+              - lambda: id(balance_mode).publish_state(x);
+  - platform: template
+    id: balance_mode # PDO 55
+    name: "${device_name} Balance Mode"
+    icon: mdi:arrow-split-vertical
+    on_value:
+      then:
+        - lambda: id(balance_mode_select).publish_state(x);
+  - platform: template
+    id: bypass_activation_mode # PDO 66
+    name: "${device_name} Bypass Activation Mode"
+    filters:
+      - map:
+          - 0 -> Auto
+          - 1 -> Activated
+          - 2 -> Deactivated
+  - platform: template
+    id: temperature_profile # PDO 67
+    name: "${device_name} Temperature Profile"
+    filters:
+      - map:
+          - 0 -> Normal
+          - 1 -> Cool
+          - 2 -> Warm
+    on_value:
+      then:
+        - lambda: id(temperature_profile_select).publish_state(x);
+  - platform: template
+    id: next_fan_change_in # PDO 81 (raw)
+    name: "${device_name} Next Fan Change In"
+  - platform: template
+    id: next_bypass_change_in # PDO 81 (raw)
+    name: "${device_name} Next Bypass Change In"
+  - platform: template
+    id: ventilation_mode # PDO 225
+    name: "${device_name} Ventilation Mode"
+    filters:
+      - map:
+          - 0 -> Disabled
+          - 1 -> Active
+          - 2 -> Overruling
+
+button:
+  - platform: template
+    name: "${device_name} Boost (15 min)"
+    icon: mdi:fast-forward-15
+    on_press:
+      - lambda: id(${comfoair_id})->set_boost(15 * 60);
+  - platform: template
+    name: "${device_name} Boost (60 min)"
+    icon: mdi:fast-forward-60
+    on_press:
+      - lambda: id(${comfoair_id})->set_boost(60 * 60);
+  - platform: template
+    name: "${device_name} Boost (3h)"
+    icon: mdi:numeric-3-circle
+    on_press:
+      - lambda: id(${comfoair_id})->set_boost(3 * 60 * 60);
+  - platform: template
+    name: "${device_name} Boost (12h)"
+    icon: mdi:dice-d12
+    on_press:
+      - lambda: id(${comfoair_id})->set_boost(12 * 60 * 60);
+  - platform: template
+    name: "${device_name} Boost off"
+    icon: mdi:stop
+    on_press:
+      - lambda: id(${comfoair_id})->set_boost(0);
+  - platform: template
+    name: "${device_name} Bypass On (1h)"
+    icon: mdi:fan-chevron-up
+    on_press:
+      - lambda: id(${comfoair_id})->set_bypass_mode(zehnder_comfoair_q::BYPASS_ACTIVATE, 60 * 60);
+  - platform: template
+    name: "${device_name} Bypass On (12h)"
+    icon: mdi:dice-d12
+    on_press:
+      - lambda: id(${comfoair_id})->set_bypass_mode(zehnder_comfoair_q::BYPASS_ACTIVATE, 12 * 60 * 60);
+  - platform: template
+    name: "${device_name} Bypass Auto"
+    icon: mdi:fan-auto
+    on_press:
+      - lambda: id(${comfoair_id})->set_bypass_mode(zehnder_comfoair_q::BYPASS_AUTO, 0);
+  - platform: template
+    name: "${device_name} Bypass Off (1h)"
+    icon: mdi:fan-chevron-down
+    on_press:
+      - lambda: id(${comfoair_id})->set_bypass_mode(zehnder_comfoair_q::BYPASS_DEACTIVATE, 60 * 60);
+
+select:
+  - platform: template
+    name: '${device_name} Fan Speed'
+    id: fan_level_select
+    icon: mdi:fan
+    options:
+     - Away
+     - Low
+     - Medium
+     - High
+    set_action:
+      - if:
+          condition:
+            not:
+              text_sensor.state:
+                id: fan_level
+                state: !lambda 'return x;'
+          then:
+          - lambda: |
+              if (x == "Away") {
+                id(${comfoair_id})->set_ventilation_level(zehnder_comfoair_q::VENTILATION_LEVEL_AWAY);
+              } else if (x == "Low") {
+                id(${comfoair_id})->set_ventilation_level(zehnder_comfoair_q::VENTILATION_LEVEL_LOW);
+              } else if (x == "Medium") {
+                id(${comfoair_id})->set_ventilation_level(zehnder_comfoair_q::VENTILATION_LEVEL_MEDIUM);
+              } else if (x == "High") {
+                id(${comfoair_id})->set_ventilation_level(zehnder_comfoair_q::VENTILATION_LEVEL_HIGH);
+              }
+  - platform: template
+    name: '${device_name} Temperature Profile'
+    id: temperature_profile_select
+    icon: mdi:thermometer
+    options:
+     - "Normal"
+     - "Cool"
+     - "Warm"
+    set_action:
+      - if:
+          condition:
+            not:
+              text_sensor.state:
+                id: temperature_profile
+                state: !lambda 'return x;'
+          then:
+            - lambda: |
+                if (x == "Normal") {
+                  id(${comfoair_id})->set_temp_profile(zehnder_comfoair_q::TEMP_PROFILE_NORMAL);
+                } else if (x == "Cool") {
+                  id(${comfoair_id})->set_temp_profile(zehnder_comfoair_q::TEMP_PROFILE_COOL);
+                } else if (x == "Warm") {
+                  id(${comfoair_id})->set_temp_profile(zehnder_comfoair_q::TEMP_PROFILE_WARM);
+                }
+  - platform: template
+    name: '${device_name} Temperature Passive'
+    id: temperature_passive_select
+    icon: mdi:thermometer-minus
+    options:
+     - "On"
+     - "Auto only"
+     - "Off"
+    optimistic: true
+    restore_value: true
+    set_action:
+      - lambda: |
+          if (x == "Off") {
+            id(${comfoair_id})->set_temperature_passive(zehnder_comfoair_q::OAO_OFF);
+          } else if (x == "Auto only") {
+            id(${comfoair_id})->set_temperature_passive(zehnder_comfoair_q::OAO_AUTO);
+          } else if (x == "On") {
+            id(${comfoair_id})->set_temperature_passive(zehnder_comfoair_q::OAO_ON);
+          }
+  - platform: template
+    name: '${device_name} Humidity Comfort'
+    id: humidity_comfort_select
+    icon: mdi:water-percent
+    options:
+     - "On"
+     - "Auto only"
+     - "Off"
+    optimistic: true
+    restore_value: true
+    set_action:
+      - lambda: |
+          if (x == "Off") {
+            id(${comfoair_id})->set_humidity_comfort(zehnder_comfoair_q::OAO_OFF);
+          } else if (x == "Auto only") {
+            id(${comfoair_id})->set_humidity_comfort(zehnder_comfoair_q::OAO_AUTO);
+          } else if (x == "On") {
+            id(${comfoair_id})->set_humidity_comfort(zehnder_comfoair_q::OAO_ON);
+          }
+  - platform: template
+    name: '${device_name} Humidity Protection'
+    id: humidity_protection_select
+    icon: mdi:water-percent
+    options:
+     - "On"
+     - "Auto only"
+     - "Off"
+    optimistic: true
+    restore_value: true
+    set_action:
+      - lambda: |
+          if (x == "Off") {
+            id(${comfoair_id})->set_humidity_protection(zehnder_comfoair_q::OAO_OFF);
+          } else if (x == "Auto only") {
+            id(${comfoair_id})->set_humidity_protection(zehnder_comfoair_q::OAO_AUTO);
+          } else if (x == "On") {
+            id(${comfoair_id})->set_humidity_protection(zehnder_comfoair_q::OAO_ON);
+          }
+  - platform: template
+    name: '${device_name} Balance mode'
+    id: balance_mode_select
+    icon: mdi:arrow-split-vertical
+    options:
+     - "Balanced"
+     - "Supply Only"
+     - "Exhaust Only"
+    optimistic: true
+    restore_value: true
+    set_action:
+      - lambda: |
+          if (x == "Balanced") {
+            id(${comfoair_id})->set_balance_mode(zehnder_comfoair_q::BALANCE_MODE_BALANCED);
+          } else if (x == "Supply Only") {
+            id(${comfoair_id})->set_balance_mode(zehnder_comfoair_q::BALANCE_MODE_SUPPLY_ONLY);
+          } else if (x == "Exhaust Only") {
+            id(${comfoair_id})->set_balance_mode(zehnder_comfoair_q::BALANCE_MODE_EXHAUST_ONLY);
+          }
+
+climate:
+  - platform: thermostat
+    name: "${device_name} Climate"
+    id: comfoair_climate
+    sensor: extract_air_temp
+    icon: mdi:air-filter
+    visual:
+      min_temperature: 18
+      max_temperature: 25
+      temperature_step: 0.5
+    min_heating_off_time: 1s
+    min_heating_run_time: 1s
+    min_cooling_off_time: 1s
+    min_cooling_run_time: 1s
+    min_idle_time: 1s
+    cool_deadband: 0.1
+    cool_overrun: 0.1
+    heat_deadband: 0.1
+    heat_overrun: 0.1
+    default_preset: home
+    preset:
+      - name: comfort
+        default_target_temperature_low: 23 °C
+        default_target_temperature_high: 24 °C
+      - name: home
+        default_target_temperature_low: 22 °C
+        default_target_temperature_high: 23 °C
+      - name: sleep
+        default_target_temperature_low: 21 °C
+        default_target_temperature_high: 22 °C
+    heat_action:
+      - select.set:
+          id: temperature_profile_select
+          option: "Warm"
+    idle_action:
+      - select.set:
+          id: temperature_profile_select
+          option: "Normal"
+    cool_action:
+      - select.set:
+          id: temperature_profile_select
+          option: "Cool"
+
+fan:
+  - platform: speed
+    name: '${device_name} Fan'
+    id: ${fan_id}
+    icon: mdi:air-filter
+    output: comfoair_fan_output
+    speed_count: 3
+    on_turn_on:
+      - switch.turn_on: auto_ventilation
+    on_turn_off:
+      - select.set:
+          id: fan_level_select
+          option: "Away"
+    on_speed_set:
+      - if:
+          condition:
+            and:
+              - fan.is_on: ${fan_id}
+              - not:
+                  lambda: return int(id(fan_level_raw).state) == id(${fan_id}).speed;
+          then:
+            - select.set:
+                id: fan_level_select
+                option: !lambda |
+                  if (id(${fan_id}).speed == 0) {
+                    return "Away";
+                  } else if (id(${fan_id}).speed == 1) {
+                    return "Low";
+                  } else if (id(${fan_id}).speed == 2) {
+                    return "Medium";
+                  } else if (id(${fan_id}).speed == 3) {
+                    return "High";
+                  } else {
+                    return "Unknown";
+                  }
+
+switch:
+  - platform: template
+    name: "${device_name} Auto Ventilation"
+    id: auto_ventilation
+    icon: mdi:toggle-switch
+    turn_on_action:
+      - if:
+          condition:
+            or:
+              - text_sensor.state:
+                  id: operating_mode
+                  state: "Boost"
+              - text_sensor.state:
+                  id: operating_mode
+                  state: "Boost (RF)"
+          then:
+            - lambda: id(${comfoair_id})->set_boost(0);
+            - delay: 1s
+      - if:
+          condition:
+            text_sensor.state:
+              id: operating_mode
+              state: "Manual (limited)"
+          then:
+            - lambda: id(${comfoair_id})->set_manual_mode(true);
+            - delay: 1s
+      - lambda: id(${comfoair_id})->set_manual_mode(false);
+      - delay: 1s
+      - if:
+          condition:
+            or:
+              - text_sensor.state:
+                  id: operating_mode
+                  state: "Boost"
+              - text_sensor.state:
+                  id: operating_mode
+                  state: "Boost (RF)"
+          then:
+            - lambda: id(${comfoair_id})->set_boost(0);
+            - delay: 1s
+    turn_off_action:
+      - lambda: id(${comfoair_id})->set_manual_mode(true);
+  - platform: template
+    name: "${device_name} Away Mode"
+    id: away_mode
+    icon: mdi:airplane
+    turn_on_action:
+      - lambda: id(${comfoair_id})->set_away(true);
+      - delay: 1s
+    turn_off_action:
+      - lambda: id(${comfoair_id})->set_away(false);
+      - delay: 1s
+
+binary_sensor:
+  - platform: template
+    id: away_indicator # PDO 16 (raw)
+    name: "${device_name} Away Indicator"
+    icon: mdi:airplane
+    on_press:
+      then:
+        - switch.template.publish:
+            id: away_mode
+            state: ON
+    on_release:
+      then:
+        - switch.template.publish:
+            id: away_mode
+            state: OFF
+  - platform: template
+    id: heating_season # PDO 210 (raw)
+    name: "${device_name} Heating Season"
+    icon: mdi:snowflake-thermometer
+  - platform: template
+    id: cooling_season # PDO 211 (raw)
+    name: "${device_name} Cooling Season"
+    icon: mdi:sun-thermometer

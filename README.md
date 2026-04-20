@@ -141,6 +141,35 @@ Code snippet:
           update_interval: '60s'
 ```
 
+### CAN bus devices
+
+### Zehnder ComfoAir Q (CAN bus)
+
+Integration for Zehnder ComfoAir Q heat recovery units via the native CAN bus,
+using the external component
+[belsander/esphome-zehnder-comfoair](https://github.com/belsander/esphome-zehnder-comfoair).
+
+Requires an ESP32 with a CAN transceiver wired to `GPIO5` (TX) and `GPIO4` (RX)
+(hardcoded in the package — edit the file if you use different pins).
+
+The package declares its own `external_components` entry, so nothing extra
+needs to be added to your base configuration.
+
+Code snippet:
+```yaml
+  zehnder_comfoair_q:
+    url: https://github.com/boneIO-eu/esphome-packages/
+    files:
+      - path: zehnder-comfoair-q.yaml
+        vars:
+          device_name: 'Zehnder'
+          comfoair_id: 'comfoair'
+          fan_id: 'comfoair_fan'
+          filter_time: '5s'
+          filter_send_every: '1'
+          filter_window_size: '3'
+```
+
 ## Contributing
 
 Contributions are welcome! Feel free to submit pull requests with new packages or improvements to existing ones.
